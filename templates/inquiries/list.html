@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="m-0">{{ title }}</h3>
+</div>
+
+{% if inquiries %}
+<div class="table-responsive">
+<table class="table align-middle">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Создано</th>
+      <th>Авто</th>
+      <th>Сообщение</th>
+      <th>Время встречи</th>
+      <th>Контакты</th>
+      <th>Статус</th>
+      {% if not buyer_view %}<th class="text-end">Действия</th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for i in inquiries %}
+    <tr>
+      <td>{{ i.id }}</td>
+      <td>{{ i.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td><a href="{{ url_for('cars.detail', car_id=i.car.id) }}">{{ i.car.brand }} {{ i.car.model }} ({{ i.car.vin }})</a></td>
+      <td style="max-width:360px">{{ i.message }}</td>
+      <td>{% if i.preferred_time %}{{ i.preferred_time.strftime('%Y-%m-%d %H:%M') }}{% else %}—{% endif %}</td>
+      <td>
+        {% if buyer_view %}
+          Продавец: {{ i.seller.full_name or i.seller.email }}<br>Email: {{ i.seller.email }}
+        {% else %}
+          Покупатель: {{ i.buyer.full_name or i.buyer.email }}<br>Email: {{ i.buyer.email }}
+          {% if i.contact_phone %}<br>Тел.: {{ i.contact_phone }}{% endif %}
+        {% endif %}
+      </td>
+      <td>
+        {% if i.status=='new' %}<span class="badge bg-secondary">Новая</span>
+        {% elif i.status=='accepted' %}<span class="badge bg-success">Принята</span>
+        {% elif i.status=='declined' %}<span class="badge bg-danger">Отклонена</span>
+        {% else %}<span class="badge bg-info text-dark">Завершена</span>{% endif %}
+      </td>
+      {% if not buyer_view %}
+      <td class="text-end">
+        <form action="{{ url_for('inquiries.set_status', inq_id=i.id, new_status='accepted') }}" method="post" class="d-inline">
+          <button class="btn btn-sm btn-outline-success">Принять</button>
+        </form>
+        <form action="{{ url_for('inquiries.set_status', inq_id=i.id, new_status='declined') }}" method="post" class="d-inline">
+          <button class="btn btn-sm btn-outline-danger">Отклонить</button>
+        </form>
+        <form action="{{ url_for('inquiries.set_status', inq_id=i.id, new_status='done') }}" method="post" class="d-inline">
+          <button class="btn btn-sm btn-outline-secondary">Закрыть</button>
+        </form>
+      </td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="text-muted">Пока нет заявок.</p>
+{% endif %}
+{% endblock %}

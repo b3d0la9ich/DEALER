@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: autosalon
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports: ["5432:5432"]
+    volumes: ["db_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d autosalon"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  inquiries:
+    build:
+      context: ./go-inquiries
+      dockerfile: Dockerfile
+    environment:
+      PG_DSN: postgresql://postgres:postgres@db:5432/autosalon?sslmode=disable
+      API_KEY: supersecret
+      PORT: 8080
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8081:8080"   # чтобы можно было дергать с хоста при отладке
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  web:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+      inquiries:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/autosalon
+      SECRET_KEY: dev-secret-change-me
+      FLASK_ENV: production
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: admin123
+      # настройки интеграции с Go-сервисом
+      INQUIRIES_BASE: http://inquiries:8080/api
+      INQUIRIES_API_KEY: supersecret
+      MAX_CONTENT_LENGTH: 5 * 1024 * 1024
+      UPLOAD_FOLDER: /app/static/uploads
+      ALLOWED_IMAGE_EXTENSIONS: "jpg,jpeg,png,gif,webp"
+    ports: ["8000:8000"]
+    volumes:
+      - .:/app:delegated
+      - uploads:/app/static/uploads
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  uploads:

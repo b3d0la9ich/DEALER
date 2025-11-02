@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Клиенты{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="m-0">Клиенты</h3>
+  <a href="{{ url_for('customers.create') }}" class="btn btn-primary">Добавить</a>
+</div>
+
+<form class="row g-2 mb-3">
+  <div class="col-auto">
+    <input type="text" class="form-control" name="q" placeholder="Поиск (ФИО/телефон)" value="{{ q }}">
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-outline-secondary" type="submit">Искать</button>
+  </div>
+</form>
+
+<div class="table-responsive">
+<table class="table table-striped align-middle">
+  <thead><tr><th>ID</th><th>ФИО</th><th>Телефон</th><th>Email</th><th></th></tr></thead>
+  <tbody>
+    {% for c in customers %}
+    <tr>
+      <td>{{ c.id }}</td>
+      <td>{{ c.full_name }}</td>
+      <td>{{ c.phone or '-' }}</td>
+      <td>{{ c.email or '-' }}</td>
+      <td class="text-end">
+        <a href="{{ url_for('customers.edit', customer_id=c.id) }}" class="btn btn-sm btn-outline-primary">Изм.</a>
+        <form action="{{ url_for('customers.delete', customer_id=c.id) }}" method="post" class="d-inline" onsubmit="return confirm('Удалить клиента?')">
+          <button class="btn btn-sm btn-outline-danger">Удалить</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

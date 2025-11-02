@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Регистрация{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <h3 class="mb-3">Регистрация</h3>
+  <form method="post" class="card p-3">
+    {{ form.csrf_token }}
+    <div class="row g-3">
+      <div class="col-md-6">{{ form.full_name.label }} {{ form.full_name(class='form-control') }}</div>
+      <div class="col-md-6">{{ form.email.label }} {{ form.email(class='form-control') }}</div>
+      <div class="col-md-6">{{ form.password.label }} {{ form.password(class='form-control') }}</div>
+      <div class="col-md-6">{{ form.role.label }} {{ form.role(class='form-select') }}</div>
+    </div>
+    <div class="mt-3 d-flex gap-2">
+      <button class="btn btn-primary">{{ form.submit.label.text }}</button>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-secondary">Войти</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

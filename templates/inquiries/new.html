@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Заявка продавцу — {{ car.brand }} {{ car.model }}{% endblock %}
+{% block content %}
+<h3 class="mb-3">Заявка по авто: {{ car.brand }} {{ car.model }} ({{ car.vin }})</h3>
+
+<div class="card p-3">
+  <form method="post">
+    {{ form.csrf_token }}
+    <div class="mb-3">
+      {{ form.message.label }} {{ form.message(class="form-control", rows=4, placeholder="Здравствуйте! Хочу посмотреть авто. Удобно ли встретиться?") }}
+    </div>
+    <div class="row g-3">
+      <div class="col-md-6">
+        {{ form.preferred_time.label }} {{ form.preferred_time(class="form-control") }}
+        <small class="form-text text-muted">Выберите желаемые дату и время (необязательно)</small>
+      </div>
+      <div class="col-md-6">
+        {{ form.contact_phone.label }} {{ form.contact_phone(class="form-control", placeholder="+7...") }}
+      </div>
+    </div>
+    <div class="mt-3 d-flex gap-2">
+      {{ form.submit(class="btn btn-primary") }}
+      <a href="{{ url_for('cars.detail', car_id=car.id) }}" class="btn btn-outline-secondary">Отмена</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

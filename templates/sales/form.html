@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h3 class="mb-3">{{ title }}</h3>
+<form method="post">
+  {{ form.csrf_token }}
+  <div class="row g-3">
+    <div class="col-md-6">{{ form.car_id.label }} {{ form.car_id(class='form-select') }}</div>
+    <div class="col-md-6">{{ form.customer_id.label }} {{ form.customer_id(class='form-select') }}</div>
+    <div class="col-md-6">{{ form.employee_id.label }} {{ form.employee_id(class='form-select') }}</div>
+    <div class="col-md-3">{{ form.sale_date.label }} {{ form.sale_date(class='form-control') }}</div>
+    <div class="col-md-3">{{ form.price.label }} {{ form.price(class='form-control') }}</div>
+    <div class="col-md-3">{{ form.payment_method.label }} {{ form.payment_method(class='form-select') }}</div>
+  </div>
+  <div class="mt-3">
+    {{ form.submit(class='btn btn-primary') }}
+    <a href="{{ url_for('sales.list_') }}" class="btn btn-outline-secondary">Отмена</a>
+  </div>
+</form>
+{% endblock %}

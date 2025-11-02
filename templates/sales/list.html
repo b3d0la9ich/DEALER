@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}{% if my_list %}Мои покупки{% else %}Продажи{% endif %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="m-0">{% if my_list %}Мои покупки{% else %}Продажи{% endif %}</h3>
+  {% if not my_list %}
+    <a href="{{ url_for('sales.create') }}" class="btn btn-primary">Новая сделка</a>
+  {% endif %}
+</div>
+
+{% if sales %}
+<div class="table-responsive">
+<table class="table table-striped align-middle">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Дата</th>
+      <th>Автомобиль</th>
+      <th>Клиент</th>
+      <th>Сотрудник</th>
+      <th>Цена</th>
+      <th>Оплата</th>
+      {% if not my_list %}<th></th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in sales %}
+    <tr>
+      <td>{{ s.id }}</td>
+      <td>{{ s.sale_date.strftime('%Y-%m-%d') }}</td>
+      <td>{{ s.car.brand }} {{ s.car.model }} ({{ s.car.vin }})</td>
+      <td>{{ s.customer.full_name }}</td>
+      <td>{{ s.employee.full_name }} — {{ s.employee.role }}</td>
+      <td>{{ '%.2f'|format(s.price) }} {{ s.car.currency or '₽' }}</td>
+      <td>{{ s.payment_method }}</td>
+
+      {% if not my_list %}
+      <td class="text-end">
+        <form action="{{ url_for('sales.delete', sale_id=s.id) }}" method="post" class="d-inline"
+              onsubmit="return confirm('Удалить продажу?')">
+          <button class="btn btn-sm btn-outline-danger">Удалить</button>
+        </form>
+      </td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="text-muted">Нет записей о продажах{% if my_list %} — у вас пока нет покупок{% endif %}.</p>
+{% endif %}
+{% endblock %}

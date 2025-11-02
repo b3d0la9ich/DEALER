@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Мои заявки{% endblock %}
+{% block content %}
+<h3 class="mb-3">Мои заявки</h3>
+
+<div class="table-responsive">
+  <table class="table align-middle">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Дата</th>
+        <th>Машина</th>
+        {% if role == 'buyer' %}
+          <th>Продавец</th>
+        {% else %}
+          <th>Покупатель</th>
+        {% endif %}
+        <th>Телефон</th>
+        <th>Желаемое время</th>
+        <th>Сообщение</th>
+        <th>Статус</th>
+        {% if role == 'seller' %}
+          <th class="text-end">Действия</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+      <tr>
+        <td>{{ it.id }}</td>
+        <td>{{ it.created_at[:19].replace('T',' ') if it.created_at else '—' }}</td>
+        <td>
+          <div class="fw-semibold">{{ it.car_name or '—' }}</div>
+          <small class="text-muted">VIN: {{ it.car_vin or '—' }}</small>
+        </td>
+
+        {% if role == 'buyer' %}
+          <td>{{ it.seller_name or ('#' ~ it.seller_id) }}</td>
+        {% else %}
+          <td>{{ it.buyer_name or ('#' ~ it.buyer_id) }}</td>
+        {% endif %}
+
+        <td>{{ it.contact_phone or '—' }}</td>
+        <td>{{ it.preferred_time and it.preferred_time[:16].replace('T',' ') or '—' }}</td>
+        <td style="white-space: pre-wrap">{{ it.message }}</td>
+        <td>
+          {% if it.status == 'accepted' %}
+            <span class="badge bg-success">Принята</span>
+          {% elif it.status == 'declined' %}
+            <span class="badge bg-danger">Отклонена</span>
+          {% elif it.status == 'closed' %}
+            <span class="badge bg-secondary">Закрыта</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">Новая</span>
+          {% endif %}
+        </td>
+
+        {% if role == 'seller' %}
+        <td class="text-end">
+          <form action="{{ url_for('inq.set_status', inq_id=it.id) }}" method="post" class="d-inline">
+            <input type="hidden" name="status" value="accepted">
+            <button class="btn btn-sm btn-success">Принять</button>
+          </form>
+          <form action="{{ url_for('inq.set_status', inq_id=it.id) }}" method="post" class="d-inline">
+            <input type="hidden" name="status" value="declined">
+            <button class="btn btn-sm btn-outline-danger">Отклонить</button>
+          </form>
+          <form action="{{ url_for('inq.set_status', inq_id=it.id) }}" method="post" class="d-inline">
+            <input type="hidden" name="status" value="closed">
+            <button class="btn btn-sm btn-outline-secondary">Закрыть</button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+      {% else %}
+      <tr><td colspan="{% if role == 'seller' %}9{% else %}8{% endif %}" class="text-center text-muted">Заявок нет</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

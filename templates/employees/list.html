@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Сотрудники{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="m-0">Сотрудники</h3>
+  <a href="{{ url_for('employees.create') }}" class="btn btn-primary">Добавить</a>
+</div>
+
+<form class="row g-2 mb-3">
+  <div class="col-auto">
+    <input type="text" class="form-control" name="q" placeholder="Поиск по ФИО" value="{{ q }}">
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-outline-secondary" type="submit">Искать</button>
+  </div>
+</form>
+
+<div class="table-responsive">
+<table class="table table-striped align-middle">
+  <thead><tr><th>ID</th><th>ФИО</th><th>Роль</th><th></th></tr></thead>
+  <tbody>
+    {% for e in employees %}
+    <tr>
+      <td>{{ e.id }}</td>
+      <td>{{ e.full_name }}</td>
+      <td>{{ e.role }}</td>
+      <td class="text-end">
+        <a href="{{ url_for('employees.edit', employee_id=e.id) }}" class="btn btn-sm btn-outline-primary">Изм.</a>
+        <form action="{{ url_for('employees.delete', employee_id=e.id) }}" method="post" class="d-inline" onsubmit="return confirm('Удалить сотрудника?')">
+          <button class="btn btn-sm btn-outline-danger">Удалить</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}
