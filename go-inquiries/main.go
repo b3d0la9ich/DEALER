@@ -27,7 +27,6 @@ type Inquiry struct {
 	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
-// Расширенная проекция для списка (JOIN cars/users)
 type InquiryFull struct {
 	ID            uint       `json:"id"`
 	CarID         uint       `json:"car_id"`
@@ -39,12 +38,10 @@ type InquiryFull struct {
 	Status        string     `json:"status"`
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
-
-	// Дополнительные поля для фронта
-	CarName    string `json:"car_name"`    // "Тойота Mark"
-	CarVIN     string `json:"car_vin"`     // "XW8..."
-	BuyerName  string `json:"buyer_name"`  // "Иван Петров"
-	SellerName string `json:"seller_name"` // "ООО Рога и Копыта"
+	CarName       string `json:"car_name"`
+	CarVIN        string `json:"car_vin"`
+	BuyerName     string `json:"buyer_name"`
+	SellerName    string `json:"seller_name"`
 }
 
 /* ---------- DTO ---------- */
@@ -65,7 +62,7 @@ type UpdateStatusDTO struct {
 /* ---------- main ---------- */
 
 func main() {
-	dsn := os.Getenv("PG_DSN") // пример: postgresql://postgres:postgres@db:5432/autosalon?sslmode=disable
+	dsn := os.Getenv("PG_DSN")
 	apiKey := os.Getenv("API_KEY")
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -75,7 +72,6 @@ func main() {
 		log.Fatal("env PG_DSN and API_KEY are required")
 	}
 
-	// DB
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err)
@@ -85,10 +81,9 @@ func main() {
 	}
 	sqlDB, _ := db.DB()
 
-	// Gin
 	r := gin.Default()
 
-	// Публичные probe
+	// probes
 	r.GET("/health", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 	r.GET("/ready", func(c *gin.Context) {
 		if err := ping(sqlDB); err != nil {
@@ -98,7 +93,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "ready"})
 	})
 
-	// Закрытая группа API под ключ
+	// 🔧 ВОТ ЭТО БЫЛО ЗАКОММЕНТИРОВАНО — ЭТО И ЕСТЬ "api"
 	api := r.Group("/api", func(c *gin.Context) {
 		if c.GetHeader("X-Api-Key") != apiKey {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -106,7 +101,7 @@ func main() {
 		}
 	})
 
-	// Создать заявку
+	// POST /api/inquiries — создать
 	api.POST("/inquiries", func(c *gin.Context) {
 		var dto CreateInquiryDTO
 		if err := c.ShouldBindJSON(&dto); err != nil {
@@ -128,7 +123,7 @@ func main() {
 		c.JSON(http.StatusCreated, in)
 	})
 
-	// Список заявок (с обогащением)
+	// GET /api/inquiries — список
 	api.GET("/inquiries", func(c *gin.Context) {
 		var list []InquiryFull
 		q := db.Table("inquiries AS i").
@@ -159,7 +154,7 @@ func main() {
 		c.JSON(http.StatusOK, list)
 	})
 
-	// Обновить статус
+	// PUT /api/inquiries/:id/status — обновить статус
 	api.PUT("/inquiries/:id/status", func(c *gin.Context) {
 		var dto UpdateStatusDTO
 		if err := c.ShouldBindJSON(&dto); err != nil {
@@ -175,9 +170,7 @@ func main() {
 		c.Status(http.StatusNoContent)
 	})
 
-	if err := r.Run("0.0.0.0:" + port); err != nil {
-		log.Fatal(err)
-	}
+	log.Fatal(r.Run("0.0.0.0:" + port))
 }
 
 /* ---------- helpers ---------- */

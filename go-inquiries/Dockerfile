@@ -2,16 +2,18 @@
 FROM golang:1.23-alpine AS build
 WORKDIR /src
 
-# 1) тянем зависимости по go.mod (go.sum может отсутствовать)
-COPY go.mod .
+# зависимости
+COPY go.mod ./
+# если есть go.sum — тоже скопируй
+# COPY go.sum ./
 RUN go mod download
 
-# 2) копируем код и формируем go.sum
+# код
 COPY . .
 RUN go mod tidy
 
-# 3) сборка статического бинарника
-RUN CGO_ENABLED=0 go build -o /out/inquiries main.go
+# <<< ВАЖНО: создать каталог /out!
+RUN mkdir -p /out && CGO_ENABLED=0 go build -o /out/inquiries ./main.go
 
 # ===== runtime =====
 FROM alpine:3.20

@@ -1,12 +1,13 @@
 from flask import Flask, render_template, flash, redirect, url_for, request
 from werkzeug.exceptions import RequestEntityTooLarge
-from config import Config
-from extensions import db, migrate, login_manager
-from models import Car, Customer, Employee, Sale, User, Inquiry
 from flask_login import current_user
 from sqlalchemy import inspect
 import os
 
+from config import Config
+from extensions import db, migrate, login_manager
+
+# блюпринты можно импортировать сразу
 from blueprints.cars import bp as cars_bp
 from blueprints.customers import bp as customers_bp
 from blueprints.sales import bp as sales_bp
@@ -20,16 +21,20 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # init extensions
+    # инициализация расширений
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
 
+    # ВАЖНО: импорт моделей ПОСЛЕ db.init_app, чтобы избежать циклов
+    from models import Car, Customer, Employee, Sale, User, Inquiry  # noqa: F401
+
     @login_manager.user_loader
     def load_user(user_id):
+        from models import User  # локальный импорт во избежание циклов
         return User.query.get(int(user_id))
 
-    # blueprints
+    # регистрация блюпринтов
     app.register_blueprint(cars_bp, url_prefix='/cars')
     app.register_blueprint(customers_bp, url_prefix='/customers')
     app.register_blueprint(sales_bp, url_prefix='/sales')
@@ -38,10 +43,9 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(inquiries_bp, url_prefix='/inquiries')
 
-    # ---- фильтры Jinja ----
+    # фильтр Jinja
     @app.template_filter('money')
     def money(value, cur='RUB'):
-        """Форматирование суммы с символом валюты и пробелом-разделителем тысяч."""
         symbols = {'RUB': '₽', 'USD': '$', 'EUR': '€'}
         try:
             v = f"{float(value):,.2f}".replace(",", " ")
@@ -51,11 +55,18 @@ def create_app():
 
     @app.route('/')
     def index():
+        insp = inspect(db.engine)
+        # защищаемся на момент пустой БД (до миграций)
+        cars_count = Car.query.count() if insp.has_table("cars") else 0
+        customers_count = Customer.query.count() if insp.has_table("customers") else 0
+        employees_count = Employee.query.count() if insp.has_table("employees") else 0
+        sales_count = Sale.query.count() if insp.has_table("sales") else 0
+
         stats = {
-            'cars': Car.query.count(),
-            'customers': Customer.query.count(),
-            'employees': Employee.query.count(),
-            'sales': Sale.query.count(),
+            'cars': cars_count,
+            'customers': customers_count,
+            'employees': employees_count,
+            'sales': sales_count,
         }
         return render_template(
             'index.html',
@@ -63,31 +74,27 @@ def create_app():
             user=current_user if current_user.is_authenticated else None
         )
 
-    # ---- однократная инициализация данных (админ) ----
+    # однократная инициализация админа после миграций
     def ensure_admin():
+        from models import User  # локальный импорт
         email = os.getenv("ADMIN_EMAIL")
         password = os.getenv("ADMIN_PASSWORD")
         if not email or not password:
             return
-
-        # создаём админа только если таблица users уже есть
         insp = inspect(db.engine)
         if not insp.has_table("users"):
-            return  # миграции ещё не накатаны
-
+            return
         if not User.query.filter_by(email=email.lower()).first():
             u = User(email=email.lower(), role="admin", full_name="Администратор")
             u.set_password(password)
             db.session.add(u)
             db.session.commit()
 
-    # обработчик слишком большого файла (HTTP 413)
     @app.errorhandler(RequestEntityTooLarge)
     def too_large(e):
         flash('Файл слишком большой. Максимальный размер 5 МБ.', 'danger')
         return redirect(request.referrer or url_for('index'))
 
-    # выполнить ensure_admin один раз при старте
     with app.app_context():
         ensure_admin()
 
