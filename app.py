@@ -95,8 +95,9 @@ def create_app():
         flash('Файл слишком большой. Максимальный размер 5 МБ.', 'danger')
         return redirect(request.referrer or url_for('index'))
 
-    with app.app_context():
-        ensure_admin()
+    # with app.app_context():
+    #     ensure_admin()
+
 
     return app
 
