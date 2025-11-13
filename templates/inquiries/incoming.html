@@ -7,7 +7,6 @@
   <table class="table align-middle">
     <thead>
       <tr>
-        <th>ID</th>
         <th>Дата</th>
         <th>Машина</th>
         <th>Покупатель</th>
@@ -21,16 +20,21 @@
     <tbody>
       {% for it in items %}
       <tr>
-        <td>{{ it.id }}</td>
         <td>{{ it.created_at[:19].replace('T',' ') if it.created_at else '—' }}</td>
+
         <td>
           <div class="fw-semibold">{{ it.car_name or '—' }}</div>
           <small class="text-muted">VIN: {{ it.car_vin or '—' }}</small>
         </td>
-        <td>{{ it.buyer_name or ('#' ~ it.buyer_id) }}</td>
+
+        <td>{{ it.buyer_name or 'Неизвестно' }}</td>
+
         <td>{{ it.contact_phone or '—' }}</td>
+
         <td>{{ it.preferred_time and it.preferred_time[:16].replace('T',' ') or '—' }}</td>
+
         <td style="white-space: pre-wrap">{{ it.message }}</td>
+
         <td>
           {% if it.status == 'accepted' %}
             <span class="badge bg-success">Принята</span>
@@ -42,15 +46,18 @@
             <span class="badge bg-warning text-dark">Новая</span>
           {% endif %}
         </td>
+
         <td class="text-end">
           <form action="{{ url_for('inq.set_status', inq_id=it.id) }}" method="post" class="d-inline">
             <input type="hidden" name="status" value="accepted">
             <button class="btn btn-sm btn-success">Принять</button>
           </form>
+
           <form action="{{ url_for('inq.set_status', inq_id=it.id) }}" method="post" class="d-inline">
             <input type="hidden" name="status" value="declined">
             <button class="btn btn-sm btn-outline-danger">Отклонить</button>
           </form>
+
           <form action="{{ url_for('inq.set_status', inq_id=it.id) }}" method="post" class="d-inline">
             <input type="hidden" name="status" value="closed">
             <button class="btn btn-sm btn-outline-secondary">Закрыть</button>
@@ -58,7 +65,7 @@
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="9" class="text-center text-muted">Заявок пока нет</td></tr>
+      <tr><td colspan="8" class="text-center text-muted">Заявок пока нет</td></tr>
       {% endfor %}
     </tbody>
   </table>

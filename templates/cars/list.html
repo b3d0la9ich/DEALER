@@ -6,7 +6,9 @@
   {% if current_user.is_authenticated and (current_user.is_seller or current_user.is_admin) %}
     <div class="d-flex gap-2">
       <a href="{{ url_for('cars.create') }}" class="btn btn-primary">Добавить</a>
-      {% if not my_list %}<a class="btn btn-outline-secondary" href="{{ url_for('cars.my') }}">Мои объявления</a>{% endif %}
+      {% if not my_list %}
+        <a class="btn btn-outline-secondary" href="{{ url_for('cars.my') }}">Мои объявления</a>
+      {% endif %}
     </div>
   {% endif %}
 </div>
@@ -22,7 +24,6 @@
 <table class="table align-middle">
   <thead>
     <tr>
-      <th>ID</th>
       <th>Фото</th>
       <th>VIN</th>
       <th>Марка</th>
@@ -36,7 +37,7 @@
   <tbody>
     {% for c in cars %}
     <tr>
-      <td>{{ c.id }}</td>
+
       <td style="width:120px">
         {% set img_src = None %}
         {% if c.image_path %}
@@ -51,11 +52,13 @@
           <span class="text-muted">—</span>
         {% endif %}
       </td>
+
       <td>{{ c.vin }}</td>
       <td>{{ c.brand }}</td>
       <td>{{ c.model }}</td>
       <td>{{ c.year }}</td>
       <td>{{ c.price | money(c.currency) }}</td>
+
       <td>
         {% if c.status=='sold' %}
           <span class="badge bg-secondary">Продано</span>
@@ -65,21 +68,30 @@
           <span class="badge bg-success">В наличии</span>
         {% endif %}
       </td>
+
       <td class="text-end">
         {% if current_user.is_authenticated and current_user.is_buyer %}
           <a href="{{ url_for('cars.detail', car_id=c.id) }}" class="btn btn-sm btn-outline-secondary">Подробнее</a>
           {% if c.status != 'sold' %}
-            <a href="{{ url_for('inquiries.new', car_id=c.id) }}" class="btn btn-sm btn-primary">Связаться</a>
+            <form method="post"
+                  action="{{ url_for('inq.create', car_id=c.id) }}"
+                  class="d-inline">
+              <button type="submit" class="btn btn-sm btn-primary">Связаться</button>
+            </form>
           {% endif %}
-        {% elif current_user.is_authenticated and (current_user.is_admin or (current_user.is_seller and c.seller_id==current_user.id)) %}
+
+        {% elif current_user.is_authenticated and (current_user.is_admin or (current_user.is_seller and c.seller_id == current_user.id)) %}
           <a href="{{ url_for('cars.edit', car_id=c.id) }}" class="btn btn-sm btn-outline-primary">Изм.</a>
-          <form action="{{ url_for('cars.delete', car_id=c.id) }}" method="post" class="d-inline" onsubmit="return confirm('Удалить объявление?')">
+          <form action="{{ url_for('cars.delete', car_id=c.id) }}" method="post" class="d-inline"
+                onsubmit="return confirm('Удалить объявление?')">
             <button class="btn btn-sm btn-outline-danger">Удалить</button>
           </form>
+
         {% else %}
           <a href="{{ url_for('cars.detail', car_id=c.id) }}" class="btn btn-sm btn-outline-secondary">Подробнее</a>
         {% endif %}
       </td>
+
     </tr>
     {% endfor %}
   </tbody>

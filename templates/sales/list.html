@@ -13,7 +13,6 @@
 <table class="table table-striped align-middle">
   <thead>
     <tr>
-      <th>ID</th>
       <th>Дата</th>
       <th>Автомобиль</th>
       <th>Клиент</th>
@@ -26,7 +25,6 @@
   <tbody>
     {% for s in sales %}
     <tr>
-      <td>{{ s.id }}</td>
       <td>{{ s.sale_date.strftime('%Y-%m-%d') }}</td>
       <td>{{ s.car.brand }} {{ s.car.model }} ({{ s.car.vin }})</td>
       <td>{{ s.customer.full_name }}</td>

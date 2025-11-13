@@ -9,20 +9,29 @@
       <h5 class="mb-3">Пользователи</h5>
       <div class="table-responsive">
         <table class="table table-striped align-middle">
-          <thead><tr><th>ID</th><th>Имя</th><th>Email</th><th>Роль</th><th></th></tr></thead>
+          <thead>
+            <tr>
+              <th>Имя</th>
+              <th>Email</th>
+              <th>Роль</th>
+              <th></th>
+            </tr>
+          </thead>
           <tbody>
             {% for u in users %}
             <tr>
-              <td>{{ u.id }}</td>
               <td>{{ u.full_name or '—' }}</td>
               <td>{{ u.email }}</td>
               <td><span class="badge bg-secondary">{{ u.role }}</span></td>
               <td class="text-end">
                 {% if not u.is_admin %}
-                <form action="{{ url_for('admin.delete_user', user_id=u.id) }}" method="post" onsubmit="return confirm('Удалить пользователя?')">
+                <form action="{{ url_for('admin.delete_user', user_id=u.id) }}" method="post"
+                      onsubmit="return confirm('Удалить пользователя?')">
                   <button class="btn btn-sm btn-outline-danger">Удалить</button>
                 </form>
-                {% else %}<span class="text-muted">—</span>{% endif %}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
               </td>
             </tr>
             {% endfor %}
@@ -37,22 +46,29 @@
       <h5 class="mb-3">Объявления (машины)</h5>
       <div class="table-responsive">
         <table class="table table-striped align-middle">
-          <thead><tr><th>ID</th><th>Марка/модель</th><th>Цена</th><th>Продавец</th><th></th></tr></thead>
-        <tbody>
-          {% for c in cars %}
-          <tr>
-            <td>{{ c.id }}</td>
-            <td>{{ c.brand }} {{ c.model }} ({{ c.vin }})</td>
-            <td>{{ '%.2f'|format(c.price) }}</td>
-            <td>{{ c.seller.full_name if c.seller else '—' }}</td>
-            <td class="text-end">
-              <form action="{{ url_for('admin.delete_car', car_id=c.id) }}" method="post" onsubmit="return confirm('Удалить объявление?')">
-                <button class="btn btn-sm btn-outline-danger">Удалить</button>
-              </form>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
+          <thead>
+            <tr>
+              <th>Марка/модель</th>
+              <th>Цена</th>
+              <th>Продавец</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in cars %}
+            <tr>
+              <td>{{ c.brand }} {{ c.model }} ({{ c.vin }})</td>
+              <td>{{ '%.2f'|format(c.price) }}</td>
+              <td>{{ c.seller.full_name if c.seller else '—' }}</td>
+              <td class="text-end">
+                <form action="{{ url_for('admin.delete_car', car_id=c.id) }}" method="post"
+                      onsubmit="return confirm('Удалить объявление?')">
+                  <button class="btn btn-sm btn-outline-danger">Удалить</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
         </table>
       </div>
     </div>
