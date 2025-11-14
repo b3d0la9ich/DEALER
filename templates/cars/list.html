@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Каталог{% endblock %}
+{% block title %}{% if my_list %}Мои объявления{% else %}Каталог{% endif %}{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h3 class="m-0">{% if my_list %}Мои объявления{% else %}Каталог автомобилей{% endif %}</h3>
@@ -17,7 +17,9 @@
   <div class="col-md-4">
     <input type="text" class="form-control" name="q" placeholder="Поиск (марка/модель/VIN)" value="{{ q }}">
   </div>
-  <div class="col-auto"><button class="btn btn-outline-secondary">Искать</button></div>
+  <div class="col-auto">
+    <button class="btn btn-outline-secondary">Искать</button>
+  </div>
 </form>
 
 <div class="table-responsive">
@@ -37,7 +39,6 @@
   <tbody>
     {% for c in cars %}
     <tr>
-
       <td style="width:120px">
         {% set img_src = None %}
         {% if c.image_path %}
@@ -52,13 +53,11 @@
           <span class="text-muted">—</span>
         {% endif %}
       </td>
-
       <td>{{ c.vin }}</td>
       <td>{{ c.brand }}</td>
       <td>{{ c.model }}</td>
       <td>{{ c.year }}</td>
       <td>{{ c.price | money(c.currency) }}</td>
-
       <td>
         {% if c.status=='sold' %}
           <span class="badge bg-secondary">Продано</span>
@@ -68,30 +67,22 @@
           <span class="badge bg-success">В наличии</span>
         {% endif %}
       </td>
-
       <td class="text-end">
         {% if current_user.is_authenticated and current_user.is_buyer %}
           <a href="{{ url_for('cars.detail', car_id=c.id) }}" class="btn btn-sm btn-outline-secondary">Подробнее</a>
           {% if c.status != 'sold' %}
-            <form method="post"
-                  action="{{ url_for('inq.create', car_id=c.id) }}"
-                  class="d-inline">
-              <button type="submit" class="btn btn-sm btn-primary">Связаться</button>
-            </form>
+            <a href="{{ url_for('inq.new', car_id=c.id) }}" class="btn btn-sm btn-primary">Связаться</a>
           {% endif %}
-
-        {% elif current_user.is_authenticated and (current_user.is_admin or (current_user.is_seller and c.seller_id == current_user.id)) %}
+        {% elif current_user.is_authenticated and (current_user.is_admin or (current_user.is_seller and c.seller_id==current_user.id)) %}
           <a href="{{ url_for('cars.edit', car_id=c.id) }}" class="btn btn-sm btn-outline-primary">Изм.</a>
           <form action="{{ url_for('cars.delete', car_id=c.id) }}" method="post" class="d-inline"
                 onsubmit="return confirm('Удалить объявление?')">
             <button class="btn btn-sm btn-outline-danger">Удалить</button>
           </form>
-
         {% else %}
           <a href="{{ url_for('cars.detail', car_id=c.id) }}" class="btn btn-sm btn-outline-secondary">Подробнее</a>
         {% endif %}
       </td>
-
     </tr>
     {% endfor %}
   </tbody>

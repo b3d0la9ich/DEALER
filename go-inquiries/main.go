@@ -38,21 +38,21 @@ type InquiryFull struct {
 	Status        string     `json:"status"`
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
-	CarName       string `json:"car_name"`
-	CarVIN        string `json:"car_vin"`
-	BuyerName     string `json:"buyer_name"`
-	SellerName    string `json:"seller_name"`
+	CarName       string     `json:"car_name"`
+	CarVIN        string     `json:"car_vin"`
+	BuyerName     string     `json:"buyer_name"`
+	SellerName    string     `json:"seller_name"`
 }
 
 /* ---------- DTO ---------- */
 
 type CreateInquiryDTO struct {
-	CarID         uint       `json:"car_id" binding:"required"`
-	BuyerID       uint       `json:"buyer_id" binding:"required"`
-	SellerID      uint       `json:"seller_id" binding:"required"`
-	Message       string     `json:"message" binding:"required"`
-	PreferredTime *time.Time `json:"preferred_time"`
-	ContactPhone  string     `json:"contact_phone"`
+	CarID         uint   `json:"car_id" binding:"required"`
+	BuyerID       uint   `json:"buyer_id" binding:"required"`
+	SellerID      uint   `json:"seller_id" binding:"required"`
+	Message       string `json:"message" binding:"required"`
+	PreferredTime string `json:"preferred_time"` // строка вида "YYYY-MM-DDTHH:MM"
+	ContactPhone  string `json:"contact_phone"`
 }
 
 type UpdateStatusDTO struct {
@@ -93,7 +93,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "ready"})
 	})
 
-	// 🔧 ВОТ ЭТО БЫЛО ЗАКОММЕНТИРОВАНО — ЭТО И ЕСТЬ "api"
+	// защищённая группа /api с проверкой X-Api-Key
 	api := r.Group("/api", func(c *gin.Context) {
 		if c.GetHeader("X-Api-Key") != apiKey {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -101,29 +101,56 @@ func main() {
 		}
 	})
 
-	// POST /api/inquiries — создать
+	// POST /api/inquiries — создать заявку
 	api.POST("/inquiries", func(c *gin.Context) {
 		var dto CreateInquiryDTO
 		if err := c.ShouldBindJSON(&dto); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+
+		// разбор и проверка preferred_time, если передан
+		var pt *time.Time
+		if dto.PreferredTime != "" {
+			// формат от <input type="datetime-local">
+			t, err := time.Parse("2006-01-02T15:04", dto.PreferredTime)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error": "Некорректный формат времени, ожидается YYYY-MM-DDTHH:MM",
+				})
+				return
+			}
+
+			// минимально допустимая дата: 14.11.2025 00:00 UTC
+			min := time.Date(2025, 11, 14, 0, 0, 0, 0, time.UTC)
+			if t.Before(min) {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error": "Время встречи не может быть раньше 14.11.2025",
+				})
+				return
+			}
+
+			pt = &t
+		}
+
 		in := Inquiry{
 			CarID:         dto.CarID,
 			BuyerID:       dto.BuyerID,
 			SellerID:      dto.SellerID,
 			Message:       dto.Message,
-			PreferredTime: dto.PreferredTime,
+			PreferredTime: pt,
 			ContactPhone:  dto.ContactPhone,
 		}
+
 		if err := db.Create(&in).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+
 		c.JSON(http.StatusCreated, in)
 	})
 
-	// GET /api/inquiries — список
+	// GET /api/inquiries — список заявок (фильтры buyer_id / seller_id)
 	api.GET("/inquiries", func(c *gin.Context) {
 		var list []InquiryFull
 		q := db.Table("inquiries AS i").
@@ -154,7 +181,7 @@ func main() {
 		c.JSON(http.StatusOK, list)
 	})
 
-	// PUT /api/inquiries/:id/status — обновить статус
+	// PUT /api/inquiries/:id/status — обновить статус заявки
 	api.PUT("/inquiries/:id/status", func(c *gin.Context) {
 		var dto UpdateStatusDTO
 		if err := c.ShouldBindJSON(&dto); err != nil {
