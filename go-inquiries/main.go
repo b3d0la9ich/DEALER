@@ -59,6 +59,50 @@ type UpdateStatusDTO struct {
 	Status string `json:"status" binding:"required,oneof=new accepted declined closed"`
 }
 
+/* ---------- helpers ---------- */
+
+func openDBWithRetry(dsn string, attempts int, delay time.Duration) (*gorm.DB, *sql.DB) {
+	var (
+		gdb *gorm.DB
+		sdb *sql.DB
+		err error
+	)
+
+	for i := 1; i <= attempts; i++ {
+		log.Printf("trying to connect to postgres (attempt %d/%d)...", i, attempts)
+
+		gdb, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err != nil {
+			log.Printf("gorm.Open error: %v", err)
+		} else {
+			sdb, err = gdb.DB()
+			if err != nil {
+				log.Printf("db.DB() error: %v", err)
+			} else {
+				if pingErr := sdb.Ping(); pingErr != nil {
+					err = pingErr
+					log.Printf("db.Ping error: %v", err)
+				} else {
+					log.Println("connected to postgres successfully")
+					return gdb, sdb
+				}
+			}
+		}
+
+		if i < attempts {
+			time.Sleep(delay)
+		}
+	}
+
+	log.Fatalf("could not connect to postgres after %d attempts: %v", attempts, err)
+	return nil, nil
+}
+
+func ping(db *sql.DB) error {
+	db.SetConnMaxLifetime(time.Minute)
+	return db.Ping()
+}
+
 /* ---------- main ---------- */
 
 func main() {
@@ -72,19 +116,20 @@ func main() {
 		log.Fatal("env PG_DSN and API_KEY are required")
 	}
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatal(err)
-	}
+	// коннект к БД с ретраями (чинит рандомные DNS-косяки типа "lookup db ... server misbehaving")
+	db, sqlDB := openDBWithRetry(dsn, 10, 2*time.Second)
+
 	if err := db.AutoMigrate(&Inquiry{}); err != nil {
 		log.Fatal(err)
 	}
-	sqlDB, _ := db.DB()
 
 	r := gin.Default()
 
 	// probes
-	r.GET("/health", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
 	r.GET("/ready", func(c *gin.Context) {
 		if err := ping(sqlDB); err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "db_down"})
@@ -198,11 +243,4 @@ func main() {
 	})
 
 	log.Fatal(r.Run("0.0.0.0:" + port))
-}
-
-/* ---------- helpers ---------- */
-
-func ping(db *sql.DB) error {
-	db.SetConnMaxLifetime(time.Minute)
-	return db.Ping()
 }
