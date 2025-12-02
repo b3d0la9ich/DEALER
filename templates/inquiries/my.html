@@ -26,7 +26,6 @@
     <tbody>
       {% for it in items %}
       <tr>
-        <td>{{ it.id }}</td>
         <td>{{ it.created_at[:19].replace('T',' ') if it.created_at else '—' }}</td>
         <td>
           <div class="fw-semibold">{{ it.car_name or '—' }}</div>
@@ -78,3 +77,4 @@
   </table>
 </div>
 {% endblock %}
+
