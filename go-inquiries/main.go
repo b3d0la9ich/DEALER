@@ -116,7 +116,7 @@ func main() {
 		log.Fatal("env PG_DSN and API_KEY are required")
 	}
 
-	// коннект к БД с ретраями (чинит рандомные DNS-косяки типа "lookup db ... server misbehaving")
+	// коннект к БД с ретраями
 	db, sqlDB := openDBWithRetry(dsn, 10, 2*time.Second)
 
 	if err := db.AutoMigrate(&Inquiry{}); err != nil {
@@ -204,8 +204,8 @@ func main() {
 				i.contact_phone, i.status, i.created_at, i.updated_at,
 				COALESCE(cars.brand,'') || ' ' || COALESCE(cars.model,'') AS car_name,
 				COALESCE(cars.vin,'') AS car_vin,
-				COALESCE(buyers.full_name,'') AS buyer_name,
-				COALESCE(sellers.full_name,'') AS seller_name
+				concat_ws(' ', buyers.last_name, buyers.first_name, buyers.middle_name) AS buyer_name,
+				concat_ws(' ', sellers.last_name, sellers.first_name, sellers.middle_name) AS seller_name
 			`).
 			Joins("LEFT JOIN cars ON cars.id = i.car_id").
 			Joins("LEFT JOIN users AS buyers ON buyers.id = i.buyer_id").

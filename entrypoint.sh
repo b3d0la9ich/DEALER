@@ -33,27 +33,26 @@ flask db upgrade || true
 echo "[entrypoint] Проверяю наличие администратора..."
 python - <<'PY'
 import os
-import sys
 from app import app, db
 
 with app.app_context():
-    # Импортируем модели внутри контекста приложения
     from models import User
 
     admin_email = os.getenv("ADMIN_EMAIL", "admin@example.com")
     admin_password = os.getenv("ADMIN_PASSWORD", "admin")
 
-    # Используем правильное имя поля для email (в модели оно lowercase)
     admin_email = admin_email.lower()
 
-    if not User.query.filter_by(email=admin_email).first():
+    existing = User.query.filter_by(email=admin_email).first()
+    if not existing:
         print(f"[entrypoint] Администратор не найден, создаю {admin_email}...")
         user = User(
             email=admin_email,
-            role='admin',  # Используем 'admin' вместо 'administrator'
-            full_name="Администратор"
+            role='admin',
+            last_name="Администратор",
+            first_name="Админ",
+            middle_name=None,
         )
-        # Используем правильный метод set_password (работает с password_hash)
         user.set_password(admin_password)
         db.session.add(user)
         db.session.commit()

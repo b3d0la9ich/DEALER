@@ -85,7 +85,13 @@ def create_app():
         if not insp.has_table("users"):
             return
         if not User.query.filter_by(email=email.lower()).first():
-            u = User(email=email.lower(), role="admin", full_name="Администратор")
+            u = User(
+                email=email.lower(),
+                role="admin",
+                last_name="Администратор",
+                first_name="Админ",
+                middle_name=None,
+            )
             u.set_password(password)
             db.session.add(u)
             db.session.commit()
@@ -97,7 +103,6 @@ def create_app():
 
     # with app.app_context():
     #     ensure_admin()
-
 
     return app
 
