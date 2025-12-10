@@ -167,7 +167,7 @@ func main() {
 			}
 
 			// минимально допустимая дата: 14.11.2025 00:00 UTC
-			min := time.Date(2025, 11, 14, 0, 0, 0, 0, time.UTC)
+			min := time.Date(2025, 12, 10, 0, 0, 0, 0, time.UTC)
 			if t.Before(min) {
 				c.JSON(http.StatusBadRequest, gin.H{
 					"error": "Время встречи не может быть раньше 14.11.2025",

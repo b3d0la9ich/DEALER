@@ -1,89 +1,393 @@
 {% extends 'base.html' %}
 {% block title %}{{ title }}{% endblock %}
+
+{% block head %}
+<style>
+.form-control.is-invalid, .form-select.is-invalid {
+    border-color: #dc3545 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-control.is-valid, .form-select.is-valid {
+    border-color: #198754 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.invalid-feedback {
+    display: block;
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.form-text {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.vin-hint {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+    display: block;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <h3 class="mb-3">{{ title }}</h3>
 
-<form method="post" enctype="multipart/form-data" class="card p-4 shadow-sm bg-dark text-light">
+<form method="post" enctype="multipart/form-data" class="card p-4 shadow-sm bg-dark text-light" id="carForm" novalidate>
   {{ form.csrf_token }}
   <div class="row g-3">
 
+    <!-- VIN Field with validation -->
     <div class="col-md-4">
       {{ form.vin.label(class="form-label") }}
-      {{ form.vin(class='form-control bg-body-secondary text-light border-0') }}
+      {{ form.vin(class='form-control bg-body-secondary text-light border-0' + (' is-invalid' if form.vin.errors else ''),
+                 placeholder='VIN код (10-32 символов)',
+                 pattern='[A-HJ-NPR-Z0-9]{10,32}',
+                 title='Только буквы A-H, J-N, P-R, Z и цифры 0-9. Буквы I, O, Q не допускаются') }}
+      {% if form.vin.errors %}
+        {% for error in form.vin.errors %}
+          <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+      {% endif %}
+      <small class="vin-hint">Только буквы A-Z (кроме I, O, Q) и цифры 0-9, 10-32 символа</small>
     </div>
 
+    <!-- Brand Field -->
     <div class="col-md-4">
       {{ form.brand.label(class="form-label") }}
-      {{ form.brand(class='form-control bg-body-secondary text-light border-0') }}
+      {{ form.brand(class='form-control bg-body-secondary text-light border-0' + (' is-invalid' if form.brand.errors else '')) }}
+      {% if form.brand.errors %}
+        {% for error in form.brand.errors %}
+          <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+      {% endif %}
     </div>
 
+    <!-- Model Field -->
     <div class="col-md-4">
       {{ form.model.label(class="form-label") }}
-      {{ form.model(class='form-control bg-body-secondary text-light border-0') }}
+      {{ form.model(class='form-control bg-body-secondary text-light border-0' + (' is-invalid' if form.model.errors else '')) }}
+      {% if form.model.errors %}
+        {% for error in form.model.errors %}
+          <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+      {% endif %}
     </div>
 
+    <!-- Year Field -->
     <div class="col-md-2">
       {{ form.year.label(class="form-label") }}
-      {{ form.year(class='form-control bg-body-secondary text-light border-0') }}
+      {{ form.year(class='form-control bg-body-secondary text-light border-0' + (' is-invalid' if form.year.errors else ''),
+                  min=1900, max=2100) }}
+      {% if form.year.errors %}
+        {% for error in form.year.errors %}
+          <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+      {% endif %}
     </div>
 
+    <!-- Color Field -->
     <div class="col-md-2">
       {{ form.color.label(class="form-label") }}
       {{ form.color(class='form-control bg-body-secondary text-light border-0') }}
     </div>
 
+    <!-- Price Field -->
     <div class="col-md-3">
       {{ form.price.label(class="form-label") }}
-      {{ form.price(class='form-control bg-body-secondary text-light border-0') }}
+      {{ form.price(class='form-control bg-body-secondary text-light border-0' + (' is-invalid' if form.price.errors else ''),
+                   step="0.01", min="0") }}
+      {% if form.price.errors %}
+        {% for error in form.price.errors %}
+          <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+      {% endif %}
     </div>
 
+    <!-- Currency Field -->
     <div class="col-md-3">
       {{ form.currency.label(class="form-label") }}
       {{ form.currency(class='form-select bg-body-secondary text-light border-0') }}
     </div>
 
-    <div class="col-md-3">
+    <!-- Status Field -->
+    <div class="col-md-2">
       {{ form.status.label(class="form-label") }}
       {{ form.status(class='form-select bg-body-secondary text-light border-0') }}
     </div>
 
+    <!-- Image URL Field -->
     <div class="col-md-6">
       {{ form.image_url.label(class="form-label") }}
       {{ form.image_url(class='form-control bg-body-secondary text-light border-0', placeholder='https://...') }}
       <small class="form-text text-secondary">Можно оставить пустым, если загружаете файл вручную.</small>
     </div>
 
+    <!-- Image File Field -->
     <div class="col-md-6">
       {{ form.image_file.label(class="form-label") }}
-      {{ form.image_file(class='form-control bg-body-secondary text-light border-0') }}
+      {{ form.image_file(class='form-control bg-body-secondary text-light border-0' + (' is-invalid' if form.image_file.errors else '')) }}
+      {% if form.image_file.errors %}
+        {% for error in form.image_file.errors %}
+          <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+      {% endif %}
       <small class="form-text text-secondary">Поддерживаемые форматы: JPG, PNG, GIF, WEBP. Размер до 5 МБ.</small>
     </div>
 
+    <!-- Description Field -->
     <div class="col-md-12">
       {{ form.description.label(class="form-label") }}
       {{ form.description(class='form-control bg-body-secondary text-light border-0', rows=4) }}
+      <small class="form-text text-secondary">Максимум 5000 символов</small>
     </div>
 
+    <!-- Current Image Display -->
     {% if form._obj and form._obj.image_path %}
       <div class="col-12 mt-3">
         <span class="text-muted">Текущее фото:</span><br>
         <img src="{{ url_for('static', filename='uploads/' ~ form._obj.image_path) }}"
              alt="Текущее фото"
-             style="height:140px;border-radius:10px;border:1px solid #333;object-fit:cover;margin-top:5px;">
+             class="img-thumbnail mt-2"
+             style="height:140px; border-radius:10px; object-fit:cover;">
       </div>
     {% elif form._obj and form._obj.image_url %}
       <div class="col-12 mt-3">
         <span class="text-muted">Текущее фото (URL):</span><br>
         <img src="{{ form._obj.image_url }}"
              alt="Текущее фото"
-             style="height:140px;border-radius:10px;border:1px solid #333;object-fit:cover;margin-top:5px;">
+             class="img-thumbnail mt-2"
+             style="height:140px; border-radius:10px; object-fit:cover;"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        <div class="alert alert-warning mt-2" style="display:none;">
+          <small>Не удалось загрузить изображение по указанному URL</small>
+        </div>
       </div>
     {% endif %}
   </div>
 
+  <!-- Submit Buttons -->
   <div class="mt-4 d-flex gap-2">
     {{ form.submit(class='btn btn-danger px-4') }}
     <a href="{{ url_for('cars.my') }}" class="btn btn-outline-light px-4">Отмена</a>
   </div>
 </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const vinInput = document.querySelector('#vin');
+    const form = document.querySelector('#carForm');
+
+    if (vinInput) {
+        // Автоматическое приведение к верхнему регистру и удаление запрещенных символов
+        vinInput.addEventListener('input', function(e) {
+            let value = this.value.toUpperCase();
+
+            // Удаляем запрещенные символы I, O, Q
+            value = value.replace(/[IOQ\s]/g, '');
+
+            // Удаляем любые другие недопустимые символы
+            value = value.replace(/[^A-HJ-NPR-Z0-9]/g, '');
+
+            // Ограничиваем длину
+            if (value.length > 32) {
+                value = value.substring(0, 32);
+            }
+
+            this.value = value;
+
+            // Валидация в реальном времени
+            validateVIN(this);
+        });
+
+        // Валидация при потере фокуса
+        vinInput.addEventListener('blur', function() {
+            validateVIN(this);
+        });
+
+        // Валидация VIN
+        function validateVIN(input) {
+            const vin = input.value.trim();
+
+            if (vin.length === 0) {
+                input.classList.remove('is-invalid', 'is-valid');
+                return;
+            }
+
+            // Проверка длины
+            if (vin.length < 10 || vin.length > 32) {
+                input.classList.remove('is-valid');
+                input.classList.add('is-invalid');
+                input.setCustomValidity('VIN должен содержать от 10 до 32 символов');
+                return;
+            }
+
+            // Проверка на запрещенные символы (дополнительная проверка)
+            if (/[^A-HJ-NPR-Z0-9]/.test(vin)) {
+                input.classList.remove('is-valid');
+                input.classList.add('is-invalid');
+                input.setCustomValidity('VIN может содержать только буквы A-H, J-N, P-R, Z и цифры 0-9');
+                return;
+            }
+
+            // Проверка на запрещенные буквы I, O, Q
+            if (/[IOQ]/.test(vin)) {
+                input.classList.remove('is-valid');
+                input.classList.add('is-invalid');
+                input.setCustomValidity('VIN не может содержать буквы I, O, Q');
+                return;
+            }
+
+            // Если все проверки пройдены
+            input.classList.remove('is-invalid');
+            input.classList.add('is-valid');
+            input.setCustomValidity('');
+        }
+
+        // Показываем подсказку при фокусе
+        vinInput.addEventListener('focus', function() {
+            const hint = this.parentElement.querySelector('.vin-hint');
+            if (hint) {
+                hint.style.opacity = '1';
+            }
+        });
+
+        vinInput.addEventListener('blur', function() {
+            const hint = this.parentElement.querySelector('.vin-hint');
+            if (hint) {
+                hint.style.opacity = '0.8';
+            }
+        });
+
+        // Инициализируем валидацию при загрузке
+        if (vinInput.value) {
+            validateVIN(vinInput);
+        }
+    }
+
+    // Валидация года
+    const yearInput = document.querySelector('#year');
+    if (yearInput) {
+        yearInput.addEventListener('blur', function() {
+            const year = parseInt(this.value);
+            if (isNaN(year) || year < 1900 || year > 2100) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+            } else {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            }
+        });
+
+        // Инициализация при загрузке
+        if (yearInput.value) {
+            yearInput.dispatchEvent(new Event('blur'));
+        }
+    }
+
+    // Валидация цены
+    const priceInput = document.querySelector('#price');
+    if (priceInput) {
+        priceInput.addEventListener('blur', function() {
+            const price = parseFloat(this.value);
+            if (isNaN(price) || price < 0) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+            } else {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            }
+        });
+
+        // Инициализация при загрузке
+        if (priceInput.value) {
+            priceInput.dispatchEvent(new Event('blur'));
+        }
+    }
+
+    // Предотвращение отправки формы при невалидных данных
+    form.addEventListener('submit', function(e) {
+        // Валидируем все обязательные поля перед отправкой
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            }
+        });
+
+        if (!isValid) {
+            e.preventDefault();
+
+            // Показываем первое невалидное поле
+            const firstInvalid = form.querySelector('.is-invalid');
+            if (firstInvalid) {
+                firstInvalid.focus();
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Показываем общее сообщение об ошибке
+            showFormError('Пожалуйста, заполните все обязательные поля');
+        }
+    });
+
+    // Функция показа ошибки формы
+    function showFormError(message) {
+        // Удаляем старую ошибку, если есть
+        const existingError = document.querySelector('.form-global-error');
+        if (existingError) {
+            existingError.remove();
+        }
+
+        // Создаем новое сообщение об ошибке
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger form-global-error mt-3';
+        errorDiv.innerHTML = `
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            ${message}
+        `;
+
+        // Вставляем перед кнопками отправки
+        const submitDiv = form.querySelector('.mt-4.d-flex');
+        form.insertBefore(errorDiv, submitDiv);
+
+        // Автоматически скрываем через 5 секунд
+        setTimeout(() => {
+            errorDiv.remove();
+        }, 5000);
+    }
+
+    // Добавляем подсказки для всех полей
+    const formLabels = form.querySelectorAll('.form-label');
+    formLabels.forEach(label => {
+        const fieldId = label.getAttribute('for');
+        if (fieldId) {
+            const field = document.querySelector(`#${fieldId}`);
+            if (field) {
+                // Добавляем событие наведения для подсказки
+                label.addEventListener('mouseenter', () => {
+                    const title = field.getAttribute('title');
+                    if (title) {
+                        // Можно добавить кастомные тултипы здесь
+                    }
+                });
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

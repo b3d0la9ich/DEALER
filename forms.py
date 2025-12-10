@@ -11,7 +11,9 @@ from wtforms import (
     TextAreaField,
 )
 from wtforms.fields import DateTimeLocalField
-from wtforms.validators import DataRequired, NumberRange, Optional, Email, Length
+from wtforms.validators import DataRequired, NumberRange, Optional, Email, Length, ValidationError
+from models import Car, User
+from flask import current_app
 
 
 class LoginForm(FlaskForm):
@@ -39,7 +41,10 @@ class CarForm(FlaskForm):
             ('sold', 'Продано'),
         ],
     )
-    vin = StringField('VIN', validators=[DataRequired()])
+    vin = StringField('VIN', validators=[
+        DataRequired(),
+        Length(min=10, max=32, message='VIN должен содержать от 10 до 32 символов')
+    ])
     brand = StringField('Марка', validators=[DataRequired()])
     model = StringField('Модель', validators=[DataRequired()])
     year = IntegerField('Год', validators=[DataRequired(), NumberRange(min=1900, max=2100)])
@@ -52,16 +57,51 @@ class CarForm(FlaskForm):
     description = TextAreaField('Описание', validators=[Optional(), Length(max=5000)])
     submit = SubmitField('Сохранить')
 
+    def __init__(self, car_id=None, *args, **kwargs):
+        """Инициализация формы с возможностью передачи ID автомобиля для редактирования"""
+        super().__init__(*args, **kwargs)
+        self.car_id = car_id
+
+    def validate_vin(self, field):
+        """Проверка уникальности VIN"""
+        vin = field.data.upper().strip()  # Приводим к верхнему регистру и убираем пробелы
+
+        # Проверка формата VIN
+        if not all(c.isalnum() for c in vin):
+            raise ValidationError('VIN может содержать только буквы и цифры')
+
+        # Проверка на запрещенные буквы (в реальном VIN их нет)
+        invalid_chars = ['I', 'O', 'Q']
+        for char in invalid_chars:
+            if char in vin:
+                raise ValidationError(f'VIN не может содержать букву "{char}"')
+
+        # Проверка уникальности
+        query = Car.query.filter_by(vin=vin)
+
+        # При редактировании исключаем текущий автомобиль из проверки
+        if self.car_id:
+            query = query.filter(Car.id != self.car_id)
+
+        existing_car = query.first()
+
+        if existing_car:
+            raise ValidationError(f'Автомобиль с VIN {vin} уже существует в базе')
+
 
 class CustomerForm(FlaskForm):
-    full_name = StringField('ФИО', validators=[DataRequired()])
+    last_name = StringField('Фамилия', validators=[DataRequired()])
+    first_name = StringField('Имя', validators=[DataRequired()])
+    middle_name = StringField('Отчество', validators=[Optional()])
     phone = StringField('Телефон', validators=[Optional()])
     email = StringField('Email', validators=[Optional(), Email()])
     submit = SubmitField('Сохранить')
 
 
 class EmployeeForm(FlaskForm):
-    full_name = StringField('ФИО', validators=[DataRequired()])
+    last_name = StringField('Фамилия', validators=[DataRequired()])
+    first_name = StringField('Имя', validators=[DataRequired()])
+    middle_name = StringField('Отчество', validators=[Optional()])
     role = SelectField(
         'Роль',
         choices=[
@@ -91,7 +131,9 @@ class SaleForm(FlaskForm):
 
 
 class RegisterForm(FlaskForm):
-    full_name = StringField('ФИО', validators=[DataRequired(), Length(max=128)])
+    last_name = StringField('Фамилия', validators=[DataRequired()])
+    first_name = StringField('Имя', validators=[DataRequired()])
+    middle_name = StringField('Отчество', validators=[Optional()])
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Пароль', validators=[DataRequired(), Length(min=6)])
     role = SelectField(
@@ -103,6 +145,13 @@ class RegisterForm(FlaskForm):
         validators=[DataRequired()],
     )
     submit = SubmitField('Зарегистрироваться')
+
+    def validate_email(self, field):
+        """Проверка уникальности email"""
+        email = field.data
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            raise ValidationError('Пользователь с таким email уже зарегистрирован')
 
 
 class InquiryForm(FlaskForm):

@@ -3,6 +3,7 @@ import uuid
 from flask import render_template, request, redirect, url_for, flash, abort, current_app
 from flask_login import current_user
 from werkzeug.utils import secure_filename
+from sqlalchemy.exc import IntegrityError
 
 from . import bp
 from extensions import db
@@ -62,8 +63,12 @@ def create():
     if form.validate_on_submit():
         img_name = _save_image(form.image_file.data)
         car = Car(
-            vin=form.vin.data, brand=form.brand.data, model=form.model.data,
-            year=form.year.data, color=form.color.data, price=form.price.data,
+            vin=form.vin.data.upper().strip(),  # Нормализуем VIN
+            brand=form.brand.data,
+            model=form.model.data,
+            year=form.year.data,
+            color=form.color.data,
+            price=form.price.data,
             currency=form.currency.data,
             status=form.status.data,
             image_url=form.image_url.data or None,
@@ -72,9 +77,21 @@ def create():
             seller_id=current_user.id
         )
         db.session.add(car)
-        db.session.commit()
-        flash('Объявление создано', 'success')
-        return redirect(url_for('cars.my'))
+
+        try:
+            db.session.commit()
+            flash('Объявление успешно создано!', 'success')
+            return redirect(url_for('cars.my'))
+        except IntegrityError as e:
+            db.session.rollback()
+            # Проверка конкретной ошибки уникальности
+            error_msg = str(e.orig)
+            if 'cars_vin_key' in error_msg or 'duplicate key' in error_msg:
+                flash(f'Ошибка: Автомобиль с VIN {form.vin.data.upper().strip()} уже существует!', 'danger')
+            else:
+                flash('Произошла ошибка при создании объявления. Попробуйте еще раз.', 'danger')
+            return render_template('cars/form.html', form=form, title='Новое объявление')
+
     return render_template('cars/form.html', form=form, title='Новое объявление')
 
 @bp.route('/<int:car_id>/edit', methods=['GET','POST'])
@@ -83,17 +100,35 @@ def edit(car_id):
     car = Car.query.get_or_404(car_id)
     if not (current_user.is_admin or car.seller_id == current_user.id):
         abort(403)
-    form = CarForm(obj=car)
+
+    # Передаем car_id в форму для корректной валидации VIN
+    form = CarForm(car_id=car.id, obj=car)
+
     if form.validate_on_submit():
         old_img = car.image_path
-        form.populate_obj(car)  # обновит стандартные поля (кроме seller_id)
+        form.populate_obj(car)  # обновит стандартные поля
+
+        # Нормализуем VIN
+        car.vin = form.vin.data.upper().strip()
+
         new_img = _save_image(form.image_file.data)
         if new_img:
             car.image_path = new_img
             _remove_image(old_img)
-        db.session.commit()
-        flash('Изменения сохранены', 'success')
-        return redirect(url_for('cars.my'))
+
+        try:
+            db.session.commit()
+            flash('Изменения успешно сохранены!', 'success')
+            return redirect(url_for('cars.my'))
+        except IntegrityError as e:
+            db.session.rollback()
+            error_msg = str(e.orig)
+            if 'cars_vin_key' in error_msg or 'duplicate key' in error_msg:
+                flash(f'Ошибка: Автомобиль с VIN {form.vin.data.upper().strip()} уже существует!', 'danger')
+            else:
+                flash('Произошла ошибка при сохранении изменений. Попробуйте еще раз.', 'danger')
+            return render_template('cars/form.html', form=form, title='Редактировать объявление')
+
     return render_template('cars/form.html', form=form, title='Редактировать объявление')
 
 @bp.route('/<int:car_id>/delete', methods=['POST'])
